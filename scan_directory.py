@@ -11,7 +11,7 @@ def get_file_metadata(path):
     # Normalize path to use the OS-specific directory separator
     normalized_path = os.path.normpath(path)
     metadata = {
-        'Filename': normalized_path,  # No need to manually add quotes
+        'Filename': normalized_path,
         'Size': stats.st_size,
         'Date Modified': datetime.datetime.fromtimestamp(stats.st_mtime, datetime.UTC).isoformat(),
         'Date Created': datetime.datetime.fromtimestamp(stats.st_ctime, datetime.UTC).isoformat(),
@@ -52,12 +52,15 @@ def scan_directory(base_path, output_file='output.csv'):
         if count >= max_count:
             break
 
-    # Write collected metadata to CSV with appropriate quoting
+    # Write collected metadata to CSV with headers not quoted
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         fieldnames = ['Filename', 'Size', 'Date Modified', 'Date Created', 'Attributes']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+        
+        # Manually write header without quotes
+        csvfile.write(','.join(fieldnames) + '\n')
 
-        writer.writeheader()
+        # Use DictWriter to write data rows with quotes
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
         for data in all_metadata:
             writer.writerow(data)
 
