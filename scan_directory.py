@@ -4,15 +4,17 @@ import datetime
 import sys
 import networkx as nx
 
+# Filename: scan_directory.py
+
 def get_file_metadata(path):
     """
     Get metadata for a given file or directory.
     """
     stats = os.stat(path)
-    # Normalize path to use the OS-specific directory separator
-    normalized_path = os.path.normpath(path)
+    # Convert path to absolute path and normalize to use the OS-specific directory separator
+    absolute_path = os.path.abspath(path)
     metadata = {
-        'Filename': normalized_path,
+        'Filename': absolute_path,
         'Size': stats.st_size,
         'Date Modified': datetime.datetime.fromtimestamp(stats.st_mtime, datetime.UTC).isoformat(),
         'Date Created': datetime.datetime.fromtimestamp(stats.st_ctime, datetime.UTC).isoformat(),
@@ -29,18 +31,18 @@ def scan_directory(base_path, max_count=None):
     count = 0
 
     # Print the traversal starting point to stderr
-    print(f"Starting traversal at: {os.path.normpath(base_path)}", file=sys.stderr)
+    print(f"Starting traversal at: {os.path.abspath(base_path)}", file=sys.stderr)
 
     # Walk through all directories and files starting from base_path
     for root, dirs, files in os.walk(base_path):
-        root_node = os.path.normpath(root)
+        root_node = os.path.abspath(root)
         graph.add_node(root_node, **get_file_metadata(root_node))
         
         # Add files in the current directory to the graph
         for name in files:
             file_path = os.path.join(root, name)
-            graph.add_node(file_path, **get_file_metadata(file_path))
-            graph.add_edge(root_node, file_path)
+            graph.add_node(os.path.abspath(file_path), **get_file_metadata(file_path))
+            graph.add_edge(root_node, os.path.abspath(file_path))
             count += 1
             if max_count is not None and count >= max_count:
                 return graph
@@ -48,8 +50,8 @@ def scan_directory(base_path, max_count=None):
         # Add subdirectories in the current directory to the graph
         for name in dirs:
             dir_path = os.path.join(root, name)
-            graph.add_node(dir_path, **get_file_metadata(dir_path))
-            graph.add_edge(root_node, dir_path)
+            graph.add_node(os.path.abspath(dir_path), **get_file_metadata(dir_path))
+            graph.add_edge(root_node, os.path.abspath(dir_path))
             count += 1
             if max_count is not None and count >= max_count:
                 return graph
