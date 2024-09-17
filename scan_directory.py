@@ -2,8 +2,9 @@ import os
 import csv
 import sys
 import networkx as nx
-from get_file_metadata_windows import get_file_metadata_windows  # Import the Windows-specific function
-from get_file_metadata import get_file_metadata
+import matplotlib.pyplot as plt
+from get_file_metadata_windows import get_file_metadata_windows  # Windows-specific function
+from get_file_metadata import get_file_metadata  # Standard Python function
 
 # filename: scan_directory.py
 
@@ -28,17 +29,6 @@ def scan_directory(base_path, max_count=None, use_windows=False):
         if metadata:
             graph.add_node(root_node, **metadata)
         
-        # Add files in the current directory to the graph
-        for name in files:
-            file_path = os.path.join(root, name)
-            metadata = get_metadata(file_path)
-            if metadata:
-                graph.add_node(os.path.abspath(file_path), **metadata)
-                graph.add_edge(root_node, os.path.abspath(file_path))
-            count += 1
-            if max_count is not None and count >= max_count:
-                return graph
-
         # Add subdirectories in the current directory to the graph
         for name in dirs:
             dir_path = os.path.join(root, name)
@@ -67,6 +57,30 @@ def write_to_csv(graph, output_file='output.csv'):
         for node, data in graph.nodes(data=True):
             writer.writerow(data)
 
+def visualize_graph(graph):
+    """
+    Visualize the directory structure graph using matplotlib and networkx with reduced edge crossings.
+    Only directories are visualized. Node labels are the last segment of the path.
+    """
+    plt.figure(figsize=(12, 8))
+    
+    try:
+        # Use planar layout if the graph is planar, else fallback
+        if nx.check_planarity(graph)[0]:
+            pos = nx.planar_layout(graph)
+        else:
+            # Fallback to a layout with reduced crossings (requires pygraphviz)
+            pos = nx.nx_agraph.graphviz_layout(graph, prog='dot')
+    except Exception as e:
+        print(f"Failed to use preferred layout: {e}. Falling back to spring layout.", file=sys.stderr)
+        pos = nx.spring_layout(graph)  # Fallback to spring layout
+    
+    # Extract the last segment of the path for labels
+    labels = {node: os.path.basename(node) for node in graph.nodes()}
+    nx.draw(graph, pos, labels=labels, with_labels=True, node_size=50, font_size=8, arrows=True)
+    plt.title("Directory Structure Visualization with Reduced Edge Crossings")
+    plt.show()
+
 if __name__ == "__main__":
     import argparse
 
@@ -75,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', type=str, default='output.csv', help='The output CSV file.')
     parser.add_argument('--max-count', type=int, help='Maximum number of entries to collect.')
     parser.add_argument('-w', '--windows', action='store_true', help='Use Windows API to fetch NTFS file attributes and timestamps.')
+    parser.add_argument('--visualize', action='store_true', help='Visualize the directory structure as a graph.')
 
     args = parser.parse_args()
 
@@ -88,3 +103,7 @@ if __name__ == "__main__":
 
     # Write the collected metadata from the graph to a CSV file
     write_to_csv(graph, args.output)
+
+    # Visualize the graph if the --visualize option is specified
+    if args.visualize:
+        visualize_graph(graph)
