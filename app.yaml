@@ -1,0 +1,30 @@
+openapi: "3.1.0"
+info:
+  title: "dir-file-cataloger"    # アプリケーション名
+  version: "1.0.0"               # バージョン
+  description: "Collects and catalogs general metadata from all accessible directories and files, independent of the specific filesystem."
+  termsOfService: "https://example.com/terms/"
+  contact:
+    name: "Takashi Sasaki"
+    url: "https://x.com/TakashiSasaki"
+    email: "takashi316@gmail.com"
+  license:
+    name: "MIT License"
+    url: "https://opensource.org/licenses/MIT"
+servers:
+  - url: "https://api.example.com/v1"
+    description: "Production server"
+components:
+  schemas:
+    AppUUID:
+      type: string
+      format: uuid
+      description: "The constant UUID used for OS component registration"
+      example: "5a8ae9ed-7872-4eca-bf74-660f3ed413eb"
+paths:
+  /catalog:
+    get:
+      summary: "Initiate a cataloging operation of the filesystem"
+      responses:
+        '200':
+          description: "Cataloging initiated successfully"
