@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
-  title: "dir-file-cataloger"    # アプリケーション名
-  version: "1.0.0"               # バージョン
+  title: "windows-dir-file-cataloger"    # アプリケーション名
+  version: "0.9.7"                       # バージョン
   description: "Collects and catalogs general metadata from all accessible directories and files, independent of the specific filesystem."
   termsOfService: "https://example.com/terms/"
   contact:
@@ -11,6 +11,7 @@ info:
   license:
     name: "MIT License"
     url: "https://opensource.org/licenses/MIT"
+  x-filename: "app.yaml"                 # ドキュメントのファイル名
 servers:
   - url: "https://api.example.com/v1"
     description: "Production server"
@@ -19,12 +20,23 @@ components:
     AppUUID:
       type: string
       format: uuid
-      description: "The constant UUID used for OS component registration"
-      example: "5a8ae9ed-7872-4eca-bf74-660f3ed413eb"
+      description: "A unique UUID representing the application that will not change."
+      const: "5a8ae9ed-7872-4eca-bf74-660f3ed413eb"
 paths:
   /catalog:
     get:
       summary: "Initiate a cataloging operation of the filesystem"
+      operationId: "initiateCataloging"
+      tags:
+        - "Catalog"
       responses:
         '200':
           description: "Cataloging initiated successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cataloging initiated successfully"
