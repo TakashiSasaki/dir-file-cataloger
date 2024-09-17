@@ -1,40 +1,13 @@
 import os
 import csv
-import datetime
 import sys
 import networkx as nx
+from get_file_metadata_windows import get_file_metadata_windows  # Import the Windows-specific function
+from get_file_metadata import get_file_metadata
 
-# Filename: scan_directory.py
+# filename: scan_directory.py
 
-def get_ntfs_timestamp(dt):
-    """
-    Convert a datetime object to an NTFS timestamp in 100-nanosecond intervals since 1601-01-01.
-    """
-    # Define the NTFS epoch start date
-    ntfs_epoch = datetime.datetime(1601, 1, 1, tzinfo=datetime.UTC)
-    # Calculate the difference between the datetime and the NTFS epoch
-    delta = dt - ntfs_epoch
-    # Convert the difference to 100-nanosecond intervals
-    ntfs_timestamp = int(delta.total_seconds() * 10**7)
-    return ntfs_timestamp
-
-def get_file_metadata(path):
-    """
-    Get metadata for a given file or directory.
-    """
-    stats = os.stat(path)
-    # Convert path to absolute path and normalize to use the OS-specific directory separator
-    absolute_path = os.path.abspath(path)
-    metadata = {
-        'Filename': absolute_path,
-        'Size': stats.st_size,
-        'Date Modified': get_ntfs_timestamp(datetime.datetime.fromtimestamp(stats.st_mtime, datetime.UTC)),
-        'Date Created': get_ntfs_timestamp(datetime.datetime.fromtimestamp(stats.st_ctime, datetime.UTC)),
-        'Attributes': stats.st_mode  # Simplified attributes; refine as needed
-    }
-    return metadata
-
-def scan_directory(base_path, max_count=None):
+def scan_directory(base_path, max_count=None, use_windows=False):
     """
     Traverse the directory tree starting at base_path, collecting file metadata into a graph.
     Returns a NetworkX DiGraph representing the file system structure.
@@ -42,19 +15,26 @@ def scan_directory(base_path, max_count=None):
     graph = nx.DiGraph()
     count = 0
 
+    # Select the appropriate metadata function
+    get_metadata = get_file_metadata_windows if use_windows else get_file_metadata
+
     # Print the traversal starting point to stderr
     print(f"Starting traversal at: {os.path.abspath(base_path)}", file=sys.stderr)
 
     # Walk through all directories and files starting from base_path
     for root, dirs, files in os.walk(base_path):
         root_node = os.path.abspath(root)
-        graph.add_node(root_node, **get_file_metadata(root_node))
+        metadata = get_metadata(root_node)
+        if metadata:
+            graph.add_node(root_node, **metadata)
         
         # Add files in the current directory to the graph
         for name in files:
             file_path = os.path.join(root, name)
-            graph.add_node(os.path.abspath(file_path), **get_file_metadata(file_path))
-            graph.add_edge(root_node, os.path.abspath(file_path))
+            metadata = get_metadata(file_path)
+            if metadata:
+                graph.add_node(os.path.abspath(file_path), **metadata)
+                graph.add_edge(root_node, os.path.abspath(file_path))
             count += 1
             if max_count is not None and count >= max_count:
                 return graph
@@ -62,8 +42,10 @@ def scan_directory(base_path, max_count=None):
         # Add subdirectories in the current directory to the graph
         for name in dirs:
             dir_path = os.path.join(root, name)
-            graph.add_node(os.path.abspath(dir_path), **get_file_metadata(dir_path))
-            graph.add_edge(root_node, os.path.abspath(dir_path))
+            metadata = get_metadata(dir_path)
+            if metadata:
+                graph.add_node(os.path.abspath(dir_path), **metadata)
+                graph.add_edge(root_node, os.path.abspath(dir_path))
             count += 1
             if max_count is not None and count >= max_count:
                 return graph
@@ -92,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument('path', type=str, nargs='?', help='The base directory to start scanning from.')
     parser.add_argument('--output', type=str, default='output.csv', help='The output CSV file.')
     parser.add_argument('--max-count', type=int, help='Maximum number of entries to collect.')
+    parser.add_argument('-w', '--windows', action='store_true', help='Use Windows API to fetch NTFS file attributes and timestamps.')
 
     args = parser.parse_args()
 
@@ -101,7 +84,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Scan the directory and collect metadata into a graph with an optional max count
-    graph = scan_directory(args.path, max_count=args.max_count)
+    graph = scan_directory(args.path, max_count=args.max_count, use_windows=args.windows)
 
     # Write the collected metadata from the graph to a CSV file
     write_to_csv(graph, args.output)
