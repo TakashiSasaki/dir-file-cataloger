@@ -17,11 +17,49 @@ servers:
     description: "Production server"
 components:
   schemas:
-    AppUUID:
-      type: string
-      format: uuid
-      description: "A unique UUID representing the application that will not change."
-      const: "5a8ae9ed-7872-4eca-bf74-660f3ed413eb"
+    FileMetadata:
+      type: object
+      description: |
+        Metadata for files and directories. The properties `Filename`, `Size`, `Date Modified`, 
+        `Date Created`, and `Attributes` are used in the Everything file search software, 
+        which is distributed at https://www.voidtools.com/. When the catalog is converted 
+        to CSV format, these property names are retained as headers to maintain consistency.
+      properties:
+        Filename:
+          type: string
+          description: "The full path or name of the file or directory."
+          x-csv-header: "Filename"
+        Size:
+          type: integer
+          format: int64
+          description: "The size of the file or directory in bytes."
+          x-csv-header: "Size"
+        DateModified:
+          type: string
+          format: date-time
+          description: |
+            The date and time when the file or directory was last modified. 
+            This timestamp uses the NTFS format as used by Windows file systems:
+            - **Epoch**: January 1, 1601 (UTC).
+            - **Resolution**: 100 nanoseconds.
+            - **Time Zone**: UTC, without any time zone offsets or daylight saving adjustments.
+          x-csv-header: "Date Modified"
+        DateCreated:
+          type: string
+          format: date-time
+          description: |
+            The date and time when the file or directory was created. Uses NTFS timestamp format.
+          x-csv-header: "Date Created"
+        Attributes:
+          type: integer
+          description: "File or directory attributes represented as a bitmask."
+          x-csv-header: "Attributes"
+      required:
+        - Filename
+        - Size
+        - DateModified
+        - DateCreated
+        - Attributes
 paths:
   /catalog:
     get:
