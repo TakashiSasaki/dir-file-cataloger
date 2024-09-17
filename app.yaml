@@ -1,6 +1,6 @@
 openapi: "3.1.0"
 info:
-  title: "windows-dir-file-cataloger"    # アプリケーション名
+  title: "dir-file-cataloger"    # アプリケーション名
   version: "0.9.7"                       # バージョン
   description: "Collects and catalogs general metadata from all accessible directories and files, independent of the specific filesystem."
   termsOfService: "https://example.com/terms/"
@@ -11,7 +11,11 @@ info:
   license:
     name: "MIT License"
     url: "https://opensource.org/licenses/MIT"
-  x-filename: "app.yaml"                 # ドキュメントのファイル名
+  x-filename: "app.yaml"
+  x-application-uuidv4: 
+    value: 5a8ae9ed-7872-4eca-bf74-660f3ed413eb
+    description: "Unique identifier for this application, used to distinguish it from other applications."
+
 servers:
   - url: "https://api.example.com/v1"
     description: "Production server"
