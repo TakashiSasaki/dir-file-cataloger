@@ -3,6 +3,8 @@ import csv
 import datetime
 import sys
 
+#filename: scan_directory.py
+
 def get_file_metadata(path):
     """
     Get metadata for a given file or directory.
@@ -19,10 +21,10 @@ def get_file_metadata(path):
     }
     return metadata
 
-def scan_directory(base_path, output_file='output.csv'):
+def scan_directory(base_path):
     """
     Traverse the directory tree starting at base_path, collecting file metadata.
-    Stops after collecting 10 items for initial testing.
+    Returns a list of metadata dictionaries.
     """
     all_metadata = []
     count = 0
@@ -52,16 +54,21 @@ def scan_directory(base_path, output_file='output.csv'):
         if count >= max_count:
             break
 
-    # Write collected metadata to CSV with headers not quoted
-    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['Filename', 'Size', 'Date Modified', 'Date Created', 'Attributes']
-        
-        # Manually write header without quotes
-        csvfile.write(','.join(fieldnames) + '\n')
+    return all_metadata
 
+def write_to_csv(metadata_list, output_file='output.csv'):
+    """
+    Write a list of metadata dictionaries to a CSV file.
+    """
+    fieldnames = ['Filename', 'Size', 'Date Modified', 'Date Created', 'Attributes']
+    
+    # Open CSV file and write header manually
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+        csvfile.write(','.join(fieldnames) + '\n')
+        
         # Use DictWriter to write data rows with quotes
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
-        for data in all_metadata:
+        for data in metadata_list:
             writer.writerow(data)
 
 if __name__ == "__main__":
@@ -78,5 +85,8 @@ if __name__ == "__main__":
         print("Error: No base path provided for traversal.", file=sys.stderr)
         sys.exit(1)
 
-    # Start scanning the directory
-    scan_directory(args.path, args.output)
+    # Scan the directory and collect metadata
+    metadata = scan_directory(args.path)
+
+    # Write the collected metadata to a CSV file
+    write_to_csv(metadata, args.output)
