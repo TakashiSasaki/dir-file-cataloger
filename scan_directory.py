@@ -6,6 +6,18 @@ import networkx as nx
 
 # Filename: scan_directory.py
 
+def get_ntfs_timestamp(dt):
+    """
+    Convert a datetime object to an NTFS timestamp in 100-nanosecond intervals since 1601-01-01.
+    """
+    # Define the NTFS epoch start date
+    ntfs_epoch = datetime.datetime(1601, 1, 1, tzinfo=datetime.UTC)
+    # Calculate the difference between the datetime and the NTFS epoch
+    delta = dt - ntfs_epoch
+    # Convert the difference to 100-nanosecond intervals
+    ntfs_timestamp = int(delta.total_seconds() * 10**7)
+    return ntfs_timestamp
+
 def get_file_metadata(path):
     """
     Get metadata for a given file or directory.
@@ -16,8 +28,8 @@ def get_file_metadata(path):
     metadata = {
         'Filename': absolute_path,
         'Size': stats.st_size,
-        'Date Modified': datetime.datetime.fromtimestamp(stats.st_mtime, datetime.UTC).isoformat(),
-        'Date Created': datetime.datetime.fromtimestamp(stats.st_ctime, datetime.UTC).isoformat(),
+        'Date Modified': get_ntfs_timestamp(datetime.datetime.fromtimestamp(stats.st_mtime, datetime.UTC)),
+        'Date Created': get_ntfs_timestamp(datetime.datetime.fromtimestamp(stats.st_ctime, datetime.UTC)),
         'Attributes': stats.st_mode  # Simplified attributes; refine as needed
     }
     return metadata
@@ -68,8 +80,8 @@ def write_to_csv(graph, output_file='output.csv'):
     with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
         csvfile.write(','.join(fieldnames) + '\n')
         
-        # Use DictWriter to write data rows with quotes
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
+        # Use DictWriter to write data rows without quoting numeric fields
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_NONNUMERIC)
         for node, data in graph.nodes(data=True):
             writer.writerow(data)
 
